@@ -18,6 +18,7 @@ Implementation:
 
 #include "NeroProducer/Nero/interface/Nero.hpp"
 
+#include "NeroProducer/Nero/interface/NeroPF.hpp"
 #include "NeroProducer/Nero/interface/NeroJets.hpp"
 #include "NeroProducer/Nero/interface/NeroLeptons.hpp"
 #include "NeroProducer/Nero/interface/NeroTaus.hpp"
@@ -66,6 +67,11 @@ Nero::Nero(const edm::ParameterSet& iConfig)
     vtx -> token = consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"));
     obj.push_back(vtx);
 
+    NeroPF *pf = new NeroPF();
+    pf -> mOnlyMc = onlyMc;
+    pf -> token = consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("pfcandidates"));
+    obj.push_back(pf);
+
     //now do what ever initialization is needed
     NeroJets *jets = new NeroJets();
     jets -> mOnlyMc = onlyMc;
@@ -87,6 +93,8 @@ Nero::Nero(const edm::ParameterSet& iConfig)
     taus -> mMinId = iConfig.getParameter<string>("minTauId");
     taus -> mMaxIso = iConfig.getParameter<double>("maxTauIso");
     taus -> SetExtend ( iConfig.getParameter<bool>("extendTau") );
+    taus -> jets_ = jets;
+    taus -> pf_ = pf;
     obj.push_back(taus);
 
     //--

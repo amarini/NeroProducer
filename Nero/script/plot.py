@@ -1,6 +1,7 @@
 
 import os,sys
 from subprocess import call
+import math
 
 
 #tnFileName = "/store/user/amarini/Nero/v0.2/TTbar_HBWB_HToTauNu_M-90_13TeV_pythia6/NeroNtuples_*root"
@@ -29,6 +30,7 @@ parser.add_option("-n","--nbins",dest="nbins",type="int",help="nbins. Default=%d
 parser.add_option("","--xmin",dest="xmin",type="float",help="xMin. Default=%default",default=0.);
 parser.add_option("","--xmax",dest="xmax",type="float",help="xMax. Default=%default",default=10);
 parser.add_option("-w","--weight",dest="weight",action="store_true",help="Assume MC is weighted. Default=%default",default=False);
+parser.add_option("","--optimization",dest="optimization",type="float",help="Run Optimization algorithm for given lumi (>0). Default=%default",default=-1);
 
 opts,args = parser.parse_args()
 
@@ -110,18 +112,51 @@ for name in BkgFileName:
 
 out = r.TFile(outfile,"RECREATE")
 obj = []
+
+## for optimization
+H_opt = None
+H_bkg = None
 # plot the n. of bjets
 for idx,chain in enumerate(sigChains):
 	h = r.TH1F("sig_%d"%idx,"sig_%d"%idx,opts.nbins,opts.xmin,opts.xmax)
 	chain.Draw(var+">>sig_%d"%idx,opts.cut)	
 	h.Scale( sigXsec[idx]/sigAll[idx])
 	obj.append(h)
+	if opts.optimization>0:
+		if  H_opt == None :
+			H_opt= h.Clone("optimization")
+		else : H_opt.Add(h)
 
 for idx,chain in enumerate(bkgChains):
 	h = r.TH1F("bkg_%d"%idx,"bkg_%d"%idx,opts.nbins,opts.xmin,opts.xmax)
 	chain.Draw(var+">>bkg_%d"%idx,opts.cut)	
 	h.Scale( bkgXsec[idx]/bkgAll[idx])
 	obj.append(h)
+	if opts.optimization>0:
+		if  H_bkg == None :
+			H_bkg= h.Clone("BkgAll")
+		else : H_bkg.Add(h)
+
+if opts.optimization>0:
+	H_opt.Scale(opts.optimization)
+	H_bkg.Scale(opts.optimization)
+	for i in range(1,opts.nbins+1):
+		s=H_opt.Integral(1,i)
+		b=H_bkg.Integral(1,i)
+		es=0
+		eb=0 
+		for j in range(0,i):
+			es = H_opt.GetBinError(j+1)**2
+			eb = H_bkg.GetBinError(j+1)**2
+		es=math.sqrt(es)
+		eb=math.sqrt(eb)
+		if s == 0 or b == 0:
+			H_opt.SetBinContent(i, 1e6 ) 
+			H_opt.SetBinError(i, 1.e6)
+		else:
+			H_opt.SetBinContent(i, s/math.sqrt(b) ) 
+			H_opt.SetBinError(i, math.sqrt(   (es/math.sqrt(b) )**2 + (s * b**(-3./2.)*eb/2. )**2 ) )
+	obj.append( H_opt )
 
 out.cd()
 for o in obj:

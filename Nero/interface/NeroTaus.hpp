@@ -3,6 +3,8 @@
 
 #include "NeroProducer/Nero/interface/NeroCollection.hpp"
 #include "NeroProducer/Core/interface/BareTaus.hpp"
+#include "NeroProducer/Nero/interface/NeroJets.hpp"
+#include "NeroProducer/Nero/interface/NeroPF.hpp"
 
 class NeroTaus : virtual public NeroCollection,
     virtual public BareTaus
@@ -25,6 +27,13 @@ class NeroTaus : virtual public NeroCollection,
         float mMinEta;
         string mMinId;
         float mMaxIso;
+        
+        // ---- RC
+        NeroJets *jets_;
+        NeroPF  *pf_;
+        inline float mean(vector<float>&a){ float S=0; for(auto& x : a) S+=x; S/=a.size() ; return S;}
+        inline float rms(vector<float>&a){ float S=0; float m=mean(a); for(auto& x: a) S+= (x-m)*(x-m); S/=(a.size()-1); S=TMath::Sqrt(S) ;return S;}
+        inline float median(vector<float>&a){ sort(a.begin(),a.end() );return a[ (a.size()-1)/2 ] ; }
 };
 
 #endif

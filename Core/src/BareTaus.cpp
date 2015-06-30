@@ -13,6 +13,10 @@ BareTaus::BareTaus(): BareCollection() {
     againstEleMedium = NULL;
     againstMuLoose = NULL;
     againstMuTight = NULL;
+
+    rcIsoTot = NULL;
+    rcIsoCh = NULL;
+    rcIsoNh = NULL;
 }
 
 BareTaus::~BareTaus(){
@@ -33,6 +37,11 @@ void BareTaus::clear(){
         againstEleMedium->clear();
         againstMuLoose->clear();
         againstMuTight->clear()  ;
+
+        rcIsoTot->clear();
+        rcIsoCh->clear();
+        rcIsoNh->clear();
+
         }
 }
 
@@ -68,6 +77,14 @@ void BareTaus::defineBranches(TTree *t){
         t->Branch("tauAgainstMuLoose","vector<int>",&againstMuLoose);
         againstMuTight = new vector<int>  ;
         t->Branch("tauAgainstMuTight","vector<int>",&againstMuTight);
+
+        rcIsoTot = new vector<float>;
+        rcIsoCh = new vector<float>;
+        rcIsoNh = new vector<float>;
+
+        t->Branch("tauRcIsoTot","vector<float>",&rcIsoTot    );
+        t->Branch("tauRcIsoCh","vector<float>",&rcIsoCh     );
+        t->Branch("tauRcIsoNh","vector<float>",&rcIsoNh     );
         }
 
 }
@@ -110,6 +127,13 @@ void BareTaus::setBranchAddresses(TTree *t){
 
         againstMuTight = new vector<int>  ;
         t->SetBranchAddress("tauAgainstMuTight",&againstMuTight);
+
+        rcIsoTot = new vector<float>;
+        rcIsoCh = new vector<float>;
+        rcIsoNh = new vector<float>;
+        t->SetBranchAddress("taurcIsoTot",&rcIsoTot    );
+        t->SetBranchAddress("taurcIsoCh",&rcIsoCh     );
+        t->SetBranchAddress("taurcIsoNh",&rcIsoNh     );
         }
 }
 // Local Variables:

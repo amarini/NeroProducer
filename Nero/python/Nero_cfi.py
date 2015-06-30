@@ -11,6 +11,7 @@ nero = cms.EDAnalyzer("Nero",
 
     vertices = cms.InputTag("offlineSlimmedPrimaryVertices"),
     rho = cms.InputTag("fixedGridRhoFastjetAll"),
+    pfcandidates = cms.InputTag("packedPFCandidates"),
     muons = cms.InputTag("slimmedMuons"),
     electrons = cms.InputTag("slimmedElectrons"),
     taus = cms.InputTag("slimmedTaus"),

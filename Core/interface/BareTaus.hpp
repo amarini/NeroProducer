@@ -2,6 +2,7 @@
 #define BARE_TAUS_H
 
 #include "NeroProducer/Core/interface/BareCollection.hpp"
+#include "TMath.h"
 
 class BareTaus : virtual public BareCollection
 {
@@ -28,6 +29,10 @@ class BareTaus : virtual public BareCollection
         vector<int>   *againstEleMedium;
         vector<int>   *againstMuLoose;
         vector<int>   *againstMuTight;
+
+        vector<float>   *rcIsoTot;
+        vector<float>   *rcIsoCh;
+        vector<float>   *rcIsoNh;
 };
 
 #endif
