@@ -131,9 +131,9 @@ void BareTaus::setBranchAddresses(TTree *t){
         rcIsoTot = new vector<float>;
         rcIsoCh = new vector<float>;
         rcIsoNh = new vector<float>;
-        t->SetBranchAddress("taurcIsoTot",&rcIsoTot    );
-        t->SetBranchAddress("taurcIsoCh",&rcIsoCh     );
-        t->SetBranchAddress("taurcIsoNh",&rcIsoNh     );
+        t->SetBranchAddress("tauRcIsoTot",&rcIsoTot    );
+        t->SetBranchAddress("tauRcIsoCh",&rcIsoCh     );
+        t->SetBranchAddress("tauRcIsoNh",&rcIsoNh     );
         }
 }
 // Local Variables:
