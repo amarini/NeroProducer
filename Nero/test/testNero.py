@@ -438,9 +438,10 @@ process.p = cms.Path(
                 process.photonIDValueMapProducer * ## ISO MAP FOR PHOTONS
                 process.electronIDValueMapProducer * ## ISO MAP FOR PHOTONS
                 process.HBB * ## HBB 74X
-                process.puppiSequence * ## does puppi, puppi met, type1 corrections
-                process.jetSequence *
-            		#process.jecSequence *
+            	#process.jecSequence *
+                #process.puppiSequence * ## does puppi, puppi met, type1 corrections
+                #process.jetSequence *
+                #process.jecSequence *
                 process.nero
                 )
 

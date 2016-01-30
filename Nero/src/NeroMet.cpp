@@ -20,14 +20,12 @@ int NeroMet::analyze(const edm::Event& iEvent){
     iEvent.getByToken(token, handle);
     if ( not handle.isValid() ) cout<<"[NeroMet]::[analyze]::[ERROR] handle is not valid"<<endl;
 
-    iEvent.getByToken(token_noHF,handle_noHF);
-    if ( not handle_noHF.isValid() ) cout<<"[NeroMet]::[analyze]::[ERROR] handle_noHF is not valid"<<endl;
 
     iEvent.getByToken(token_puppi,handle_puppi);
     if ( not handle_puppi.isValid() ) cout<<"[NeroMet]::[analyze]::[ERROR] handle_puppi is not valid"<<endl;
 
-    iEvent.getByToken(token_puppiUncorr,handle_puppiUncorr);
-    if ( not handle_puppiUncorr.isValid() ) cout<<"[NeroMet]::[analyze]::[ERROR] handle_puppiUncorr is not valid"<<endl;
+    // -- iEvent.getByToken(token_puppiUncorr,handle_puppiUncorr);
+    // -- if ( not handle_puppiUncorr.isValid() ) cout<<"[NeroMet]::[analyze]::[ERROR] handle_puppiUncorr is not valid"<<endl;
     //--
 
     const pat::MET &met = handle->front();
@@ -58,6 +56,7 @@ int NeroMet::analyze(const edm::Event& iEvent){
 
         if ( pf == NULL ) cout<<"[NeroMet]::[analyze]::[ERROR] PF pointer is null. Run NeroPF. "<<endl; 
 
+            /*
         for (unsigned int i = 0, n = pf->handle->size(); i < n; ++i) {
             const pat::PackedCandidate &cand = (*pf->handle)[i];
 
@@ -72,20 +71,19 @@ int NeroMet::analyze(const edm::Event& iEvent){
             if (std::abs(cand.eta()) < 3.0 ) 
                 pfmet_3p0 += TLorentzVector(cand.px(),cand.py(),cand.pz(),cand.energy());
         }
+        
 
         *pfMet_e3p0 = TLorentzVector( -pfmet_3p0 );
         *metNoMu = TLorentzVector(metnomu);  // no minus
         *trackMet = TLorentzVector( -tkMet );
-
-        const pat::MET &metnohf = handle_noHF->front(); 
-        *metNoHF = TLorentzVector( metnohf.px(),metnohf.py(),metnohf.pz(),metnohf.energy());
-        sumEtRawNoHF = metnohf.uncorSumEt();
+        */
 
         auto &puppi = handle_puppi->front(); 
         *metPuppi =  TLorentzVector( puppi.px(), puppi.py(),puppi.pz(),puppi.energy() );
-        sumEtRawPuppi = handle_puppiUncorr->front().sumEt();
+        //sumEtRawPuppi = handle_puppiUncorr->front().sumEt();
+        sumEtRawPuppi = puppi.uncorSumEt();
 
-        /*
+        
         for(Syst mysyst = (Syst)0; mysyst < MaxSyst ; mysyst = (Syst)((int)mysyst +1 ) )
         {
             pat::MET::METUncertainty miniAODUnc=pat::MET::METUncertaintySize;
@@ -124,7 +122,7 @@ int NeroMet::analyze(const edm::Event& iEvent){
                     puppi . shiftedP4(miniAODUnc).energy()
                     );
         }// end syst loop
-        */
+        
 
     }    
     // GEN INFO

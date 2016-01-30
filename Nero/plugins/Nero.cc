@@ -34,6 +34,7 @@ Implementation:
 #include "NeroProducer/Nero/interface/NeroMatching.hpp"
 
 //#define VERBOSE 2
+//#define VERBOSE 1
 
 //
 // constants, enums and typedefs
@@ -110,7 +111,7 @@ Nero::Nero(const edm::ParameterSet& iConfig)
     obj.push_back(puppijets);
     
     //--
-    NeroFatJets *chsAK8 = new NeroFatJets();
+    /*NeroFatJets *chsAK8 = new NeroFatJets();
     chsAK8 -> mRunJEC = false; // these jets are already corrected in MiniAOD
     chsAK8 -> mOnlyMc = onlyMc;
     chsAK8 -> token = consumes<pat::JetCollection>(iConfig.getParameter<edm::InputTag>("chsAK8"));
@@ -154,6 +155,7 @@ Nero::Nero(const edm::ParameterSet& iConfig)
     puppiCA15 -> cachedPrefix = iConfig.getParameter<string>("CA15PuppiName");
     puppiCA15 -> jetRadius = 1.5;
     obj.push_back(puppiCA15);
+    */
 
     // --- 
     NeroTaus *taus = new NeroTaus();
@@ -202,9 +204,8 @@ Nero::Nero(const edm::ParameterSet& iConfig)
     NeroMet *met = new NeroMet();
     met -> mOnlyMc = onlyMc;
     met -> token = consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("mets"));
-    met -> token_noHF = consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("metsNoHF"));
-    met -> token_puppi = consumes<reco::PFMETCollection>(iConfig.getParameter<edm::InputTag>("metsPuppi"));
-    met -> token_puppiUncorr = consumes<reco::PFMETCollection>(iConfig.getParameter<edm::InputTag>("metsPuppiUncorrected"));
+    met -> token_puppi = consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("metsPuppi"));
+    //met -> token_puppiUncorr = consumes<reco::PFMETCollection>(iConfig.getParameter<edm::InputTag>("metsPuppiUncorrected"));
     met -> pf = pf;
     met -> SetExtend (iConfig.getParameter<bool>("extendMet"));
     obj.push_back(met);
