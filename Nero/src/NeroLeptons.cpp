@@ -146,7 +146,7 @@ int NeroLeptons::analyze(const edm::Event & iEvent)
 
         l.p4.SetPxPyPzE( el.px(),el.py(),el.pz(),el.energy());
 
-        /*
+        
         float smear = 0.0, scale = 1.0;
         float aeta = std::abs(el.eta());
         float et = el.energy()/cosh(aeta);
@@ -164,9 +164,8 @@ int NeroLeptons::analyze(const edm::Event & iEvent)
                  smear = EleCorr->getSmearingSigma((int) iEvent.id().run(), el.isEB(), el.r9(), aeta, et, 0.,0.);
                  float corr = 1.0  + smear * rnd_->Gaus(0,1);
                  l.p4 *= corr;
-        
         }
-        */
+        
 
         l.selBits = 0 ;
             l.selBits |= unsigned(isPassTight)*LepTight;
