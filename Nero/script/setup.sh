@@ -8,16 +8,18 @@
 
 function CMSSW_7_6_4 {
 	git cms-init
-	echo /CommonTools/PileupAlgos/ > .git/info/sparse-checkout
-	echo /CommonTools/Utils/ >> .git/info/sparse-checkout
-	echo /JetMETCorrections/Configuration/ >> .git/info/sparse-checkout
-	echo /JetMETCorrections/Modules/ >> .git/info/sparse-checkout
-	echo /JetMETCorrections/Type1MET/ >> .git/info/sparse-checkout
-	echo /PhysicsTools/PatAlgos/ >> .git/info/sparse-checkout
-	echo /PhysicsTools/PatUtils/ >> .git/info/sparse-checkout
-	echo /RecoMET/METAlgorithms/ >> .git/info/sparse-checkout
-	echo /RecoMET/METProducers/ >> .git/info/sparse-checkout
-	echo /EgammaAnalysis/ElectronTools/ >> .git/info/sparse-checkout
+	git cms-addpkg CommonTools/PileupAlgos
+	git cms-addpkg CommonTools/Utils
+	git cms-addpkg JetMETCorrections/Configuration
+	git cms-addpkg JetMETCorrections/Modules
+	git cms-addpkg JetMETCorrections/Type1MET
+	git cms-addpkg PhysicsTools/PatAlgos
+	git cms-addpkg PhysicsTools/PatUtils
+	git cms-addpkg RecoMET/METAlgorithms
+	git cms-addpkg RecoMET/METProducers
+	git cms-addpkg EgammaAnalysis/ElectronTools
+	git cms-addpkg RecoJets/JetProducers
+	git cms-merge-topic jbran:pileupJetId76X
 	git cms-merge-topic amarini:egcorrection76x
 	git cms-merge-topic cms-met:metTool76X
 	git remote add blinkseb https://github.com/blinkseb/cmssw.git
@@ -25,6 +27,12 @@ function CMSSW_7_6_4 {
 	git cherry-pick 4cca4688ae368bbbef2102e9bdc5bb00f6df959e
 	git cms-merge-topic amarini:topic_met
 	#git clone git@github.com:zdemirag/NeroProducer.git ## TO REMOVE
+	cd RecoJets/JetProducers/data/
+	wget https://github.com/jbrands/RecoJets-JetProducers/raw/3dad903ed25d025f68be94d6f781ca957d6f86ac/pileupJetId_76x_Eta0to2p5_BDT.weights.xml.gz
+	wget https://github.com/jbrands/RecoJets-JetProducers/raw/3dad903ed25d025f68be94d6f781ca957d6f86ac/pileupJetId_76x_Eta2p5to2p75_BDT.weights.xml.gz
+	wget https://github.com/jbrands/RecoJets-JetProducers/raw/3dad903ed25d025f68be94d6f781ca957d6f86ac/pileupJetId_76x_Eta2p75to3_BDT.weights.xml.gz
+	wget https://github.com/jbrands/RecoJets-JetProducers/raw/3dad903ed25d025f68be94d6f781ca957d6f86ac/pileupJetId_76x_Eta3to5_BDT.weights.xml.gz
+	cd $CMSSW_BASE/src
 }
 
 [ "X$1" == "X" ] && $1=$CMSSW_VERSION

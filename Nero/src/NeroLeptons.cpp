@@ -64,7 +64,7 @@ int NeroLeptons::analyze(const edm::Event & iEvent)
         float chiso  = mu.pfIsolationR04().sumChargedHadronPt;
         float niso   = mu.pfIsolationR04().sumNeutralHadronEt;
         float phoiso = mu.pfIsolationR04().sumPhotonEt;
-        float puiso = mu.pfIsolationR04().sumPUPt;
+        float puiso  = mu.pfIsolationR04().sumPUPt;
         float totiso = chiso + TMath::Max( niso + phoiso - .5*puiso, 0. ) ;
     
         if ( mMaxIso_mu > 0 and totiso/mu.pt() > mMaxIso_mu ) continue;
@@ -145,10 +145,13 @@ int NeroLeptons::analyze(const edm::Event & iEvent)
         l.iso = chIso + TMath::Max( nhIso + phoIso - evt_->rho * ea , 0. ) ; 
 
         l.p4.SetPxPyPzE( el.px(),el.py(),el.pz(),el.energy());
+
+        /*
         float smear = 0.0, scale = 1.0;
         float aeta = std::abs(el.eta());
         float et = el.energy()/cosh(aeta);
 
+        
         if (iEvent.isRealData() )
         {
                 
@@ -163,6 +166,7 @@ int NeroLeptons::analyze(const edm::Event & iEvent)
                  l.p4 *= corr;
         
         }
+        */
 
         l.selBits = 0 ;
             l.selBits |= unsigned(isPassTight)*LepTight;
