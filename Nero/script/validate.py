@@ -297,6 +297,7 @@ mmPuIso={}
 
 mmNjets={}
 mmLeadJetPt={}
+mmLeadBtag={}
 
 emPt={}
 emNjets={}
@@ -345,6 +346,7 @@ mmPuIso["data"] =ROOT.TH1D("mmPuIso","mmPuIso;I_{l1} [GeV]; Events",100,0,10)
 
 mmNjets["data"] = ROOT.TH1D("mmNjets","mmNjets;N_{jets}^{30 GeV} (Z#rightarrow#mu#mu); Events",10,0,10)
 mmLeadJetPt["data"] = ROOT.TH1D("mmLeadJetPt","mmLeadJetPt;p_{T}^{j1} (Z#rightarrow#mu#mu); Events",100,0,100)
+mmLeadBtag["data"] = ROOT.TH1D("mmLeadBtag","mmLeadBtag;N_{jets}^{30 GeV} (Z#rightarrow#mu#mu); Events",10,0,10)
 
 emPt["data"]=ROOT.TH1D("emPt","emPt;p_{T}^{e#mu};Events",150,0,300)
 emNjets["data"]=ROOT.TH1D("emNjets","emNjets;N_{jets}^{30 GeV} (Z#rightarrow e#mu);Events",10,0-.5,10-.5)
@@ -455,6 +457,7 @@ for mc in book:
 	eeLeadJetPt[mc] = eeLeadJetPt["data"].Clone("%s_%s"%(eeLeadJetPt["data"].GetName(),mc))
 	mmNjets[mc] = mmNjets["data"].Clone("%s_%s"%(mmNjets["data"].GetName(),mc))
 	mmLeadJetPt[mc] = mmLeadJetPt["data"].Clone("%s_%s"%(mmLeadJetPt["data"].GetName(),mc))
+	mmLeadBtag[mc] = mmLeadBtag["data"].Clone("%s_%s"%(mmLeadBtag["data"].GetName(),mc))
 
 	ttM[mc] = ttM["data"].Clone("%s_%s"%(ttM["data"].GetName(),mc))
 	ttPt[mc] = ttPt["data"].Clone("%s_%s"%(ttPt["data"].GetName(),mc))
@@ -528,6 +531,7 @@ for mc in book:
 			mmPuIso[mc].Fill( t.lepPuIso[0] ,w)
 			mmNjets[mc].Fill( nJets, w) 
 			mmLeadJetPt[mc].Fill( leadJetPt,w)
+			if nJets >0 : mmLeadBtag["data"].Fill( t.jetBdiscr[0],w) 
 
 		if t.lepP4.GetEntries()>=2 and t.lepP4[1].Pt() > 25 and t.lepPdgId[0]* t.lepPdgId[1] == -13*11 :  ## OS OF muon, leading two
 			ll = t.lepP4[0] + t.lepP4[1]
@@ -575,7 +579,7 @@ for mc in book:
 				break
 
 		if subleadTau >0 :
-			w *= 1./8. #prescale
+			w *= 1./11. #prescale
 			ll = t.tauP4[leadTau] + t.tauP4[subleadTau]
 			ttRho[mc].Fill( t.rho,w )
 			ttM[mc].Fill( ll.M(), w)
@@ -666,6 +670,7 @@ for data in datasets:
 			mmPuIso["data"].Fill( t.lepPuIso[0] )
 			mmNjets["data"].Fill( nJets) 
 			mmLeadJetPt["data"].Fill( leadJetPt)
+			if nJets >0 : mmLeadBtag["data"].Fill( t.jetBdiscr[0]) 
 
 		if t.lepP4.GetEntries()>=2 and t.lepP4[1].Pt() > 25 and t.lepPdgId[0]* t.lepPdgId[1] == -13*11 and data=="SingleMuon":  ## OS OF muon, leading two
 			ll = t.lepP4[0] + t.lepP4[1]
@@ -731,7 +736,7 @@ for name in ['mmM','mmPt','mmRho','mmMet',
 		'mmMetNoHf','mmEta',
 		'eeM','eePt','eeRho','eeMet',
 		'eeIso','eeChIso','eeNhIso', 'eePhoIso','eePuIso',
-		'eeNjets','eeLeadJetPt','mmNjets','mmLeadJetPt',
+		'eeNjets','eeLeadJetPt','mmNjets','mmLeadJetPt', "mmLeadBtag",
 		'eeMetNoHf','eeEta','e2Eta','e2dPhiJ',
 		'ttM','ttPt', 'ttMet','ttRho','ttIso', 'ttLeadPt',
 		'eeNpv','mmNpv',
