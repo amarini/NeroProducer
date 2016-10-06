@@ -151,6 +151,9 @@ if __name__ == "__main__" :
     
     (options, args) = parser.parse_args()
 
+    if '/eos/user' in options.eos :
+    	EOS += " root://eosuser"
+
     ## should work but doesn't unmount 
     if options.filelist is not "":
         file=open(options.filelist)
