@@ -293,8 +293,8 @@ runMetCorAndUncFromMiniAOD(process,
 ## turn off the existing weight usage for the spring16 monte carlo
 ## this slows the computation by x2, but is necessary
 
-process.puppiNoLep.useExistingWeights = False
-process.puppi.useExistingWeights = False
+process.puppiNoLep.useExistingWeights = True
+process.puppi.useExistingWeights = True
 
 print "-> Updating the puppi met collection to run on to 'slimmedMETsPuppi with nero' with the new jec in the GT for Type1"
 process.nero.metsPuppi=cms.InputTag('slimmedMETsPuppi','','nero')
