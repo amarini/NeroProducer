@@ -90,7 +90,7 @@ if __name__ == '__main__':
         if value=='True':
             config.Data.splitting = 'LumiBased'
             #config.Data.lumiMask=None
-            url = "https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco"
+            url = "https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final"
             config.Data.lumiMask = url + "/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt"
             #url = "https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions15/13TeV/"
             #config.Data.lumiMask = url + "Reprocessing/Cert_13TeV_16Dec2015ReReco_Collisions15_25ns_JSON_Silver_v2.txt"
