@@ -1,4 +1,5 @@
 #include <memory>
+#include <iostream>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDProducer.h"
@@ -39,6 +40,9 @@
 //fastjet
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/ClusterSequence.hh"
+
+#define QGVARIABLES_DEBUG 0
+
 using namespace fastjet;
 using namespace std;
 
@@ -56,9 +60,9 @@ class QGVariables : public edm::EDProducer{
       virtual void produce(edm::Event&, const edm::EventSetup&);
 
       //std::tuple<int, int, int, float, float, float, float> calcVariables(const reco::Jet *jet, edm::Handle<reco::VertexCollection>& vC, float dR=0.0001);
-      map<string,float> calcVariables(float jeta=0.0, float jphi=0.0, float dR=0.00001); // calc Variables from  inputParticles
-      map<string,float> calcVariablesPat(const reco::Jet *jet,float dR=0.00001); // calc Variables from  inputParticles
-      map<string,float> calcVariablesGen(const reco::GenJet *jet,float dR=0.00001); // calc Variables from  inputParticles
+      map<string,float> calcVariables(float jeta=0.0, float jphi=0.0, float dR=0.00001,float pt=0.5); // calc Variables from  inputParticles
+      map<string,float> calcVariablesPat(const reco::Jet *jet,float dR=0.00001,float pt=0.5); // calc Variables from  inputParticles
+      map<string,float> calcVariablesGen(const reco::GenJet *jet,float dR=0.00001,float pt=0.5); // calc Variables from  inputParticles
 
       template <typename T,typename J> void putInEvent(std::string, const edm::Handle< J >&, std::vector<T>*, edm::Event&);
 
@@ -67,6 +71,9 @@ class QGVariables : public edm::EDProducer{
 
       vector<PseudoJet> input_particles;
       vector<float> dRToProduce{0.01,0.02,0.03,0.04,0.05,0.075,0.10,0.15,0.20,0.25};
+      vector<float> ptToProduce{0.5};
+      bool isData{false};
+      map<int,JetDefinition> AKDef;
       
 };
 
@@ -82,14 +89,29 @@ template <typename T,typename J> void QGVariables::putInEvent(std::string name, 
 
 QGVariables::QGVariables(const edm::ParameterSet& iConfig) :
   jetsToken( 		consumes<edm::View<reco::Jet>>(		iConfig.getParameter<edm::InputTag>("srcJets"))),//slimmedJets
-  genjetsToken( 	consumes<reco::GenJetCollection>(		iConfig.getParameter<edm::InputTag>("srcGenJets"))) //slimmedGenJets
+  genjetsToken( 	consumes<reco::GenJetCollection>(		iConfig.getParameter<edm::InputTag>("srcGenJets"))), //slimmedGenJets
+  isData( 	iConfig.getParameter<bool>("isData")) //slimmedGenJets
 {
-  for(const auto dR : dRToProduce){
-        produces<edm::ValueMap<float>>(Form("axis2_dR_0p%.0f",dR*1000));
-        produces<edm::ValueMap<float>>(Form("axis1_dR_0p%.0f",dR*1000));
-        produces<edm::ValueMap<int>>  (Form("mult_dR_0p%.0f",dR*1000));
-        produces<edm::ValueMap<float>>(Form("ptD_dR_0p%.0f",dR*1000));
-        produces<edm::ValueMap<float>>(Form("ptDrLog_dR_0p%.0f",dR*1000));
+  for(const auto dR : dRToProduce)
+  {
+        AKDef[int(dR*1000) ] = JetDefinition(antikt_algorithm, dR);
+  }
+
+  for(const auto dR : dRToProduce)
+  for(const auto pt : ptToProduce){
+        produces<edm::ValueMap<float>>(Form("axis2-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+        produces<edm::ValueMap<float>>(Form("axis1-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+        produces<edm::ValueMap<int>>  (Form("mult-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+        produces<edm::ValueMap<float>>(Form("ptD-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+        produces<edm::ValueMap<float>>(Form("ptDrLog-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+        //GEN
+        if (not isData){
+            produces<edm::ValueMap<float>>(Form("Gen-axis2-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+            produces<edm::ValueMap<float>>(Form("Gen-axis1-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+            produces<edm::ValueMap<int>>  (Form("Gen-mult-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+            produces<edm::ValueMap<float>>(Form("Gen-ptD-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+            produces<edm::ValueMap<float>>(Form("Gen-ptDrLog-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000));
+        }
     }
 }
 
@@ -97,15 +119,19 @@ QGVariables::QGVariables(const edm::ParameterSet& iConfig) :
 /// Produce qgLikelihood using {mult, ptD, -log(axis2)}
 void QGVariables::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+  if(QGVARIABLES_DEBUG){ 
+      cout<<"----------------------------------------"<<endl;
+      cout<<"|"<< iEvent.id().run()<<":"<<iEvent.luminosityBlock()<<":"<<iEvent.id().event()<<"|"<<endl;
+      cout<<"----------------------------------------"<<endl;
+  }
   //clear
   input_particles.clear();
   edm::Handle<edm::View<reco::Jet>> jets;
   iEvent.getByToken(jetsToken, 		jets);
 
-  edm::Handle<reco::GenJetCollection> genjets;
-  iEvent.getByToken(genjetsToken, 		genjets);
   //
   for(const auto dR : dRToProduce)
+  for(const auto pt : ptToProduce)
   {
     std::vector<float>* axis2Product 		= new std::vector<float>;
     std::vector<float>* axis1Product 		= new std::vector<float>;
@@ -126,49 +152,55 @@ void QGVariables::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         pt_dr_logProduct->push_back(vars["pt_dr_log"]);
     }
 
-    putInEvent(Form("axis2_dR_0p%.0f",dR*1000),        jets, axis2Product, iEvent);
-    putInEvent(Form("axis1_dR_0p%.0f",dR*1000),        jets, axis1Product, iEvent);
-    putInEvent(Form("mult_dR_0p%.0f",dR*1000),         jets, multProduct,  iEvent);
-    putInEvent(Form("ptD_dR_0p%.0f",dR*1000),          jets, ptDProduct,   iEvent);
-    putInEvent(Form("ptDrLog_dR_0p%.0f",dR*1000),    jets, pt_dr_logProduct,iEvent);
+    putInEvent(Form("axis2-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),    jets, axis2Product, iEvent);
+    putInEvent(Form("axis1-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),    jets, axis1Product, iEvent);
+    putInEvent(Form("mult-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),     jets, multProduct,  iEvent);
+    putInEvent(Form("ptD-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),      jets, ptDProduct,   iEvent);
+    putInEvent(Form("ptDrLog-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),  jets, pt_dr_logProduct,iEvent);
   }
 
   // gen loop
-  for(const auto dR : dRToProduce)
-  {
-    std::vector<float>* axis2Product 		= new std::vector<float>;
-    std::vector<float>* axis1Product 		= new std::vector<float>;
-    std::vector<int>*   multProduct 		= new std::vector<int>;
-    std::vector<float>* ptDProduct 		    = new std::vector<float>;
-    std::vector<float>* pt_dr_logProduct 	= new std::vector<float>;
+  if (not isData){
+      edm::Handle<reco::GenJetCollection> genjets;
+      iEvent.getByToken(genjetsToken, 		genjets);
+      for(const auto dR : dRToProduce)
+      for(const auto pt : ptToProduce)
+      {
+          std::vector<float>* axis2Product 		= new std::vector<float>;
+          std::vector<float>* axis1Product 		= new std::vector<float>;
+          std::vector<int>*   multProduct 		= new std::vector<int>;
+          std::vector<float>* ptDProduct 	    = new std::vector<float>;
+          std::vector<float>* pt_dr_logProduct 	= new std::vector<float>;
 
 
 
-    for(auto jet = genjets->begin(); jet != genjets->end(); ++jet)
-    {
+          for(auto jet = genjets->begin(); jet != genjets->end(); ++jet)
+          {
 
-        map<string,float> vars = calcVariablesGen(&*jet,dR);
+              map<string,float> vars = calcVariablesGen(&*jet,dR);
 
-        axis1Product->push_back(vars["axis1"]);
-        axis2Product->push_back(vars["axis2"]);
-        multProduct ->push_back(vars["mult"]);
-        ptDProduct  ->push_back(vars["ptD"]);
-        pt_dr_logProduct->push_back(vars["pt_dr_log"]);
-    }
+              axis1Product->push_back(vars["axis1"]);
+              axis2Product->push_back(vars["axis2"]);
+              multProduct ->push_back(vars["mult"]);
+              ptDProduct  ->push_back(vars["ptD"]);
+              pt_dr_logProduct->push_back(vars["pt_dr_log"]);
+          }
 
-    putInEvent(Form("Gen_axis2_dR_0p%.0f",dR*1000),      genjets, axis2Product, iEvent);
-    putInEvent(Form("Gen_axis1_dR_0p%.0f",dR*1000),      genjets, axis1Product, iEvent);
-    putInEvent(Form("Gen_mult_dR_0p%.0f",dR*1000),       genjets, multProduct,  iEvent);
-    putInEvent(Form("Gen_ptD_dR_0p%.0f",dR*1000),        genjets, ptDProduct,   iEvent);
-    putInEvent(Form("Gen_ptDrLog_dR_0p%.0f",dR*1000),    genjets, pt_dr_logProduct,iEvent);
+          putInEvent(Form("Gen-axis2-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),      genjets, axis2Product, iEvent);
+          putInEvent(Form("Gen-axis1-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),      genjets, axis1Product, iEvent);
+          putInEvent(Form("Gen-mult-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),       genjets, multProduct,  iEvent);
+          putInEvent(Form("Gen-ptD-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),        genjets, ptDProduct,   iEvent);
+          putInEvent(Form("Gen-ptDrLog-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),    genjets, pt_dr_logProduct,iEvent);
+      }
   }
 }
 
 
 /// Calculation of axis2, mult and ptD
 // reco
-std::map<string,float> QGVariables::calcVariablesPat(const reco::Jet *jet,float dR){
+std::map<string,float> QGVariables::calcVariablesPat(const reco::Jet *jet,float dR,float pt){
     //Loop over the jet constituents
+    if (QGVARIABLES_DEBUG) cout<<"calVariables PAT pt="<<jet->pt()<<":"<<jet->eta()<<":dR="<<dR<<endl;
     input_particles.clear();
     for(auto daughter : jet->getJetConstituentsQuick()){
             auto part = static_cast<const pat::PackedCandidate*>(daughter);
@@ -185,29 +217,67 @@ std::map<string,float> QGVariables::calcVariablesPat(const reco::Jet *jet,float 
 
            input_particles.push_back(PseudoJet (part->px(),part->py(),part->pz(),part->energy()) );
     }
-    return calcVariables(jet->eta(),jet->phi(),dR);
+    return calcVariables(jet->eta(),jet->phi(),dR,pt);
 }
 
-std::map<string,float> QGVariables::calcVariablesGen(const reco::GenJet *jet,float dR){
+std::map<string,float> QGVariables::calcVariablesGen(const reco::GenJet *jet,float dR,float pt){
     //Loop over the jet constituents
+    if(QGVARIABLES_DEBUG)cout<<"calVariables GEN pt="<<jet->pt()<<":"<<jet->eta()<<":dR="<<dR<<endl;
     input_particles.clear();
-    for(auto daughter : jet->getGenConstituents () ){
+    //for(auto daughter : jet->getGenConstituents () ){
+    for(auto p : jet->getJetConstituentsQuick()){
+           auto daughter = static_cast<const reco::GenParticle*>(p); 
            if ( abs(daughter->pdgId() ) == 12 or abs(daughter->pdgId() ) == 14 or abs(daughter->pdgId() ) == 16 ) continue;
-           input_particles.push_back(PseudoJet (daughter->px(),daughter->py(),daughter->pz(),daughter->energy()) );
+           //input_particles.push_back(PseudoJet (daughter->px(),daughter->py(),daughter->pz(),daughter->energy()) );
+           //protect from gen particles with 0 pt 
+           PseudoJet pj(daughter->px(),daughter->py(),daughter->pz(),daughter->energy()) ;
+           if ( pj.eta() <10 and not std::isnan(pj.perp() ) )input_particles.push_back(pj);
     }
-    return calcVariables(jet->eta(),jet->phi(),dR);
+    return calcVariables(jet->eta(),jet->phi(),dR,pt);
 }
 
 // gen
 
-map<string,float> QGVariables::calcVariables(float jeta, float jphi,float dR){
+map<string,float> QGVariables::calcVariables(float jeta, float jphi,float dR,float pt){
+    if(QGVARIABLES_DEBUG) cout<<"calVariables dR="<<dR<<endl;
     map<string,float> vars;
 
-    JetDefinition ak_def(antikt_algorithm, dR);
-    ClusterSequence seq(input_particles, ak_def);
-    auto inclusive_jets = sorted_by_pt(seq.inclusive_jets(0.0)); // ptmin
+    if(QGVARIABLES_DEBUG) cout<<" --> INPUT="<<input_particles.size()<<endl;
+
+    if(QGVARIABLES_DEBUG>1){
+            cout<<"    Running cluster sequence on inputs:"<<endl;
+        for(size_t i=0;i<input_particles.size();++i){
+            cout<<"    * "<<input_particles.at(i).perp()<<" :"<<input_particles.at(i).eta()<<" :"<<input_particles.at(i).phi()<<endl;
+        }
+    }
+
+    if (input_particles.size() == 0 ){
+        vars["mult"] = 0;
+        vars["ptD"] = -999;
+        vars["axis1"] = -999;
+        vars["axis2"] = -999;
+        vars["pt_dr_log"] = -999;
+        if(QGVARIABLES_DEBUG)cout<<"end calc variables (FAST1): "<<vars["ptD"]<<":"<<vars["mult"]<<endl;
+        return vars;
+    }
+
+    //JetDefinition ak_def(antikt_algorithm, dR);
+    ClusterSequence seq(input_particles, AKDef[int(dR*1000) ] );
+    auto inclusive_jets = sorted_by_pt(seq.inclusive_jets(pt)); // ptmin 500 MeV
     
     vars["mult"] = inclusive_jets.size();
+
+    if(QGVARIABLES_DEBUG) cout<<" --> MULT="<<vars["mult"]<<endl;
+
+    if (inclusive_jets.size() == 0 ){
+        vars["mult"] = 0;
+        vars["ptD"] = -999;
+        vars["axis1"] = -999;
+        vars["axis2"] = -999;
+        vars["pt_dr_log"] = -999;
+        if(QGVARIABLES_DEBUG)cout<<"end calc variables (FAST2): "<<vars["ptD"]<<":"<<vars["mult"]<<endl;
+        return vars;
+    }
 
 
     float sum_weight = 0., sum_deta = 0., sum_dphi = 0., sum_deta2 = 0., sum_dphi2 = 0., sum_detadphi = 0., sum_pt = 0.;
@@ -262,17 +332,17 @@ map<string,float> QGVariables::calcVariables(float jeta, float jphi,float dR){
     vars["axis2"] = axis2;
     vars["pt_dr_log"] = pt_dr_log;
 
+    if(QGVARIABLES_DEBUG)cout<<"end calc variables: "<<ptD<<":"<<vars["mult"]<<endl;
     return vars;
 }
 
 
 /// Descriptions method
 void QGVariables::fillDescriptions(edm::ConfigurationDescriptions& descriptions){
-  edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("srcJets");
-  desc.add<edm::InputTag>("srcRho");
-  desc.add<std::string>("jetsLabel");
-  descriptions.add("QGVariables",  desc);
+  //edm::ParameterSetDescription desc;
+  //desc.add<edm::InputTag>("srcJets");
+  //desc.add<edm::InputTag>("srcGenJets");
+  //descriptions.add("QGVariables",  desc);
 }
 
 
