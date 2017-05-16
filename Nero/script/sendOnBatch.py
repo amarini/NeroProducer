@@ -252,6 +252,9 @@ elif opts.query:
         cmd = 'das_client.py --query="file dataset=' + opts.eos+'" --idx=0 --limit=10000  | grep -v "Showing" | grep -v \'^$\' '
         outputList = check_output(cmd,shell=True);
         fileList = [ '"'+ f + '"' for f in outputList.split() if '/store' in f ]
+elif '/eos/user' in opts.eos:## do not put file:, because it's used by zcat
+    fileList0=glob(opts.eos + "/*")
+    fileList = [ '"file:' + x + '"' for x in fileList0 ]
 else:	
 	cmd = EOS+ " find -f " + opts.eos
 	print "Going to call cmd:",cmd

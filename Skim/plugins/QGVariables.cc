@@ -150,6 +150,7 @@ void QGVariables::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         multProduct ->push_back(vars["mult"]);
         ptDProduct  ->push_back(vars["ptD"]);
         pt_dr_logProduct->push_back(vars["pt_dr_log"]);
+
     }
 
     putInEvent(Form("axis2-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),    jets, axis2Product, iEvent);
@@ -184,7 +185,13 @@ void QGVariables::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
               multProduct ->push_back(vars["mult"]);
               ptDProduct  ->push_back(vars["ptD"]);
               pt_dr_logProduct->push_back(vars["pt_dr_log"]);
-          }
+
+              if (QGVARIABLES_DEBUG>1)
+              {
+                cout <<"Vars GEN jet Pt="<<jet->pt()<<" eta"<<jet->eta()<<" phi="<<jet->phi()<< "dR="<<dR<<endl;
+                cout <<"    mult="<<vars["mult"]<<" ptD="<<vars["ptD"]<<endl;
+              }
+              }
 
           putInEvent(Form("Gen-axis2-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),      genjets, axis2Product, iEvent);
           putInEvent(Form("Gen-axis1-dR-0p%.0f-pT-%.0f",dR*1000,pt*1000),      genjets, axis1Product, iEvent);
@@ -223,14 +230,18 @@ std::map<string,float> QGVariables::calcVariablesPat(const reco::Jet *jet,float 
 std::map<string,float> QGVariables::calcVariablesGen(const reco::GenJet *jet,float dR,float pt){
     //Loop over the jet constituents
     if(QGVARIABLES_DEBUG)cout<<"calVariables GEN pt="<<jet->pt()<<":"<<jet->eta()<<":dR="<<dR<<endl;
+
+    cout<<"calVariables GEN pt="<<jet->pt()<<":"<<jet->eta()<<":dR="<<dR<<endl;
     input_particles.clear();
     //for(auto daughter : jet->getGenConstituents () ){
     for(auto p : jet->getJetConstituentsQuick()){
-           auto daughter = static_cast<const reco::GenParticle*>(p); 
-           if ( abs(daughter->pdgId() ) == 12 or abs(daughter->pdgId() ) == 14 or abs(daughter->pdgId() ) == 16 ) continue;
+           //auto daughter = static_cast<const reco::GenParticle*>(p); 
+           //if ( abs(daughter->pdgId() ) == 12 or abs(daughter->pdgId() ) == 14 or abs(daughter->pdgId() ) == 16 ) continue;
+           //cout<<"  considering daughter pt="<<daughter->pt()<<":"<<daughter->eta()<<":"<<daughter->phi()<<" PDG"<<daughter->pdgId()<<endl;
+           //cout<<"       <*> "<<p->pt()<<":"<<p->eta()<<":"<<p->phi()<<endl;
            //input_particles.push_back(PseudoJet (daughter->px(),daughter->py(),daughter->pz(),daughter->energy()) );
            //protect from gen particles with 0 pt 
-           PseudoJet pj(daughter->px(),daughter->py(),daughter->pz(),daughter->energy()) ;
+           PseudoJet pj(p->px(),p->py(),p->pz(),p->energy()) ;
            if ( pj.eta() <10 and not std::isnan(pj.perp() ) )input_particles.push_back(pj);
     }
     return calcVariables(jet->eta(),jet->phi(),dR,pt);
