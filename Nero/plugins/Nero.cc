@@ -250,7 +250,7 @@ Nero::Nero(const edm::ParameterSet& iConfig)
     mc -> lhe_token   = mayConsume<LHEEventProduct>(iConfig.getParameter<edm::InputTag>("lhe"));//LHEEventProduct_externalLHEProducer__LHE
     mc -> pu_token     = consumes<std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("pileup"));
     mc -> jet_token    = consumes<reco::GenJetCollection>(iConfig.getParameter<edm::InputTag>("genjets"));
-    mc -> runinfo_token = consumes<GenRunInfoProduct,edm::InRun>(iConfig.getParameter<edm::InputTag>("genruninfo") );
+    //mc -> runinfo_token = consumes<GenRunInfoProduct,edm::InRun>(iConfig.getParameter<edm::InputTag>("genruninfo") );
     mc -> mMinGenParticlePt = iConfig.getParameter<double>("minGenParticlePt");
     mc -> mMinGenJetPt = iConfig.getParameter<double>("minGenJetPt");
     mc -> mParticleGun = iConfig.getUntrackedParameter<bool>("particleGun",false);
@@ -259,8 +259,14 @@ Nero::Nero(const edm::ParameterSet& iConfig)
     mc -> genCHadJetIndex_token = consumes<std::vector<int> > (edm::InputTag("matchGenCHadron", "genCHadJetIndex"));
     mc -> genCHadBHadronId_token = consumes<std::vector<int> > (edm::InputTag("matchGenCHadron", "genCHadBHadronId"));
     mc -> genTtbarId_token = consumes<int> (edm::InputTag("categorizeGenTtbar", "genTtbarId"));
+    cout<<"[Nero]::["<<__FUNCTION__<<"] Construct GenXSecAnalyzer"<<endl;
+    mc -> gen_ .reset (new GenXSecAnalyzer( consumesCollector(),iConfig));
+    cout<<"[Nero]::["<<__FUNCTION__<<"] Call beginJob"<<endl;
+    mc -> gen_ -> beginJob();
+    cout<<"[Nero]::["<<__FUNCTION__<<"]  Done"<<endl;
 
     obj.push_back(mc);
+    lumiObj.push_back(mc);
     runObj.push_back(mc);
 
     NeroMatching *match = new NeroMatching();
@@ -490,11 +496,18 @@ Nero::endJob()
 // ------------ method called when starting to processes a run  ------------
 
     void 
-Nero::beginRun(edm::Run const&iRun, edm::EventSetup const&)
+Nero::beginRun(edm::Run const&iRun, edm::EventSetup const&iSetup)
 {
     #ifdef NERO_VERBOSE
         if(NERO_VERBOSE) cout<<" ======= BEGIN RUN ======="<<endl;
     #endif
+    for(auto o : runObj )
+    {
+        #ifdef NERO_VERBOSE
+            if(NERO_VERBOSE> 1) cout<<"[Nero]::[beginRun]::[DEBUG] calling object"<<o->name()<<endl;
+        #endif
+        o->beginRun(iRun,iSetup);
+    }
 }
 
 
@@ -516,7 +529,7 @@ Nero::endRun(edm::Run const&iRun, edm::EventSetup const&iSetup)
         #ifdef NERO_VERBOSE
             if(NERO_VERBOSE> 1) cout<<"[Nero]::[endRun]::[DEBUG] calling object"<<o->name()<<endl;
         #endif
-        o->analyzeRun(iRun, hXsec_);
+        o->analyzeRun(iRun,iSetup, hXsec_);
     }
     #ifdef NERO_VERBOSE
         if(NERO_VERBOSE) cout <<" ======== END RUN ======="<<endl;
@@ -528,11 +541,19 @@ Nero::endRun(edm::Run const&iRun, edm::EventSetup const&iSetup)
 // ------------ method called when starting to processes a luminosity block  ------------
 
     void 
-Nero::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
+Nero::beginLuminosityBlock(edm::LuminosityBlock const&iLumi, edm::EventSetup const&iSetup)
 {
     #ifdef NERO_VERBOSE
         if(NERO_VERBOSE) cout <<" -------- BEGIN LUMI --------"<<endl;
     #endif
+    for(auto o :lumiObj)
+    {
+        #ifdef NERO_VERBOSE
+            if(NERO_VERBOSE>1) cout<<"[Nero]::[beginLuminosityBlock]::[DEBUG] calling object"<<o->name()<<endl;
+        #endif
+
+        o->beginLumi(iLumi,iSetup);
+    }
 
 }
 
@@ -540,7 +561,7 @@ Nero::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
 // ------------ method called when ending the processing of a luminosity block  ------------
 
     void 
-Nero::endLuminosityBlock(edm::LuminosityBlock const&iLumi, edm::EventSetup const&)
+Nero::endLuminosityBlock(edm::LuminosityBlock const&iLumi, edm::EventSetup const&iSetup)
 {
     for(auto o :lumiObj)
     {
@@ -548,7 +569,7 @@ Nero::endLuminosityBlock(edm::LuminosityBlock const&iLumi, edm::EventSetup const
             if(NERO_VERBOSE>1) cout<<"[Nero]::[endLuminosityBlock]::[DEBUG] calling object"<<o->name()<<endl;
         #endif
 
-        o->analyzeLumi(iLumi,all_);
+        o->analyzeLumi(iLumi,iSetup,all_);
     }
 
     #ifdef NERO_VERBOSE

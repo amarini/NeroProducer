@@ -119,6 +119,7 @@ function CMSSW_8_0_26_patch1 {
 
 function CMSSW_8_0_28_patch1 {
         git cms-init
+        git cms-merge-topic amarini:genxsecanalyzer_library
         git cms-merge-topic ikrav:egm_id_80X_v3_photons_rebasedTo_8026patch2
         git cms-merge-topic ikrav:egm_id_80X_v2
 }

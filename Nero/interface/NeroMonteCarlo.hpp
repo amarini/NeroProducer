@@ -5,18 +5,21 @@
 #include "NeroProducer/Core/interface/BareMonteCarlo.hpp"
 #include "NeroProducer/Nero/interface/NeroRunLumi.hpp"
 
+// we should use this gup for the Gen Xsec
+#include "GeneratorInterface/Core/interface/GenXSecAnalyzer.h"
+#include <memory>
+
 
 class NeroMonteCarlo : virtual public NeroCollection,
     virtual public BareMonteCarlo,
-    virtual public NeroRun
+    virtual public NeroRun,
+    virtual public NeroLumi
 {
     public:
         NeroMonteCarlo();
         ~NeroMonteCarlo();
         int analyze(const edm::Event& iEvent);
         //void defineBranches(TTree *t);
-        inline int analyzeRun(edm::Run const & iRun, TH1F* h)
-        { return crossSection(iRun,h);}
         virtual inline string name(){return "NeroMonteCarlo";};
 
         // --- specific fuctions
@@ -57,6 +60,12 @@ class NeroMonteCarlo : virtual public NeroCollection,
         // ---  
         template<class T> // T is supposed to be: reco::GenParticles or Packed Gen Particles
         unsigned  ComputeFlags( T & p ) ;
+
+
+        std::unique_ptr<GenXSecAnalyzer> gen_;
+        int analyzeLumi(const edm::LuminosityBlock &iLumi ,edm::EventSetup const&iSetup,TTree*) ;
+        int beginRun( edm::Run const &iRun,edm::EventSetup const&iSetup) override; 
+        inline int analyzeRun(edm::Run const & iRun,edm::EventSetup const &iSetup, TH1F* h)override;
 
 };
 

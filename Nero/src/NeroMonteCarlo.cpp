@@ -5,7 +5,7 @@
 
 #include <map>
 
-#define VERBOSE 0
+#define VERBOSE 1
 
 NeroMonteCarlo::NeroMonteCarlo() :  
         NeroCollection(),
@@ -52,7 +52,7 @@ int NeroMonteCarlo::analyze(const edm::Event& iEvent){
     if (not genCHadBHadronId_handle.isValid() ) cout<<"[NeroMonteCarlo]::[analyze]::ERROR genCHadBHadronId_handle is not valid"<<endl;
     if (not genTtbarId_handle.isValid() ) cout<<"[NeroMonteCarlo]::[analyze]::ERROR genTtbarId_handle is not valid"<<endl;
 
-    if(VERBOSE){ sw.Stop() ; cout<<"[NeroMonteCarlo]::[analyze] getToken took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset(); sw.Start();}
+    if(VERBOSE>1){ sw.Stop() ; cout<<"[NeroMonteCarlo]::[analyze] getToken took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset(); sw.Start();}
     // INFO
     if(VERBOSE>1) cout<<"[NeroMonteCarlo]::[analyze]::[DEBUG] mcWeight="<<endl;
     mcWeight = info_handle -> weight();
@@ -109,7 +109,7 @@ int NeroMonteCarlo::analyze(const edm::Event& iEvent){
         //Out-of-time
     }
 
-    if(VERBOSE){ sw.Stop() ; cout<<"[NeroMonteCarlo]::[analyze] pu&info took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset(); sw.Start();}
+    if(VERBOSE>1){ sw.Stop() ; cout<<"[NeroMonteCarlo]::[analyze] pu&info took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset(); sw.Start();}
     // GEN PARTICLES
     //TLorentzVector genmet(0,0,0,0);
     std::map<const reco::Candidate *,unsigned int> genIndices;
@@ -195,7 +195,7 @@ int NeroMonteCarlo::analyze(const edm::Event& iEvent){
     } //end packed
 
 
-    if(VERBOSE){ sw.Stop() ; cout<<"[NeroMonteCarlo]::[analyze] packed took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset(); sw.Start();}
+    if(VERBOSE>1){ sw.Stop() ; cout<<"[NeroMonteCarlo]::[analyze] packed took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset(); sw.Start();}
     // LOOP over PRUNED PARTICLES
     //for (auto & gen : *pruned_handle)
     for (unsigned int i=0;i<pruned_handle->size() ;++i)
@@ -255,7 +255,7 @@ int NeroMonteCarlo::analyze(const edm::Event& iEvent){
         parent->push_back(motherIdx);
     }
 
-    if(VERBOSE){ sw.Stop() ; cout<<"[NeroMonteCarlo]::[analyze] pruned took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset(); sw.Start();}
+    if(VERBOSE>1){ sw.Stop() ; cout<<"[NeroMonteCarlo]::[analyze] pruned took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset(); sw.Start();}
     // GEN JETS
     for (const auto & j : *jet_handle)
     {
@@ -285,53 +285,95 @@ int NeroMonteCarlo::analyze(const edm::Event& iEvent){
 
     genTtbarId = *genTtbarId_handle ;
 
-    if(VERBOSE){ sw.Stop() ; cout<<"[NeroMonteCarlo]::[analyze] jets took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset();}
+    #ifdef VERBOSE
+    if(VERBOSE>1){ sw.Stop() ; cout<<"[NeroMonteCarlo]::["<<__FUNCTION__<<"] jets took "<<sw.CpuTime()<<" Cpu and "<<sw.RealTime()<<" RealTime"<<endl; sw.Reset();}
+    #endif
     return 0;
 }
+
+int NeroMonteCarlo::beginRun( edm::Run const &iRun,edm::EventSetup const&iSetup) 
+{ 
+    #ifdef VERBOSE
+    if (VERBOSE>0)cout<<"[NeroMonteCarlo]::["<<__FUNCTION__<<"] genXSecAnalyzer begin run"<<endl;
+    #endif
+    gen_->beginRun(iRun,iSetup); 
+    return 0;
+}
+
+int NeroMonteCarlo::analyzeRun(edm::Run const & iRun,edm::EventSetup const &iSetup, TH1F* h)
+{ 
+    #ifdef VERBOSE
+    if (VERBOSE>0)cout<<"[NeroMonteCarlo]::["<<__FUNCTION__<<"] genXSecAnalyzer end run"<<endl;
+    #endif
+    gen_->endRun(iRun,iSetup); 
+    gen_->endJob(); 
+
+    return crossSection(iRun,h);
+}
+
+int NeroMonteCarlo::analyzeLumi(const edm::LuminosityBlock &iLumi ,edm::EventSetup const&iSetup,TTree*) 
+{ 
+    #ifdef VERBOSE
+    if (VERBOSE>0)cout<<"[NeroMonteCarlo]::["<<__FUNCTION__<<"] genXSecAnalyzer end luminosity block"<<endl;
+    #endif
+    gen_->endLuminosityBlock(iLumi,iSetup); 
+    return 0;
+} 
 
 
 int NeroMonteCarlo::crossSection(edm::Run const & iRun, TH1F* h)
 {
+    //TODO use GenXSecAnalyzer
     // will be run at the end of run
     if ( isRealData ) return 0; // if the first run has no events ?  TODO
 
-    iRun.getByToken( runinfo_token, runinfo_handle);
+    //iRun.getByToken( runinfo_token, runinfo_handle);
     //iRun.getByLabel( "generator", runinfo_handle);
 
-    if ( not runinfo_handle . isValid() ) cout<<"[NeroMonteCarlo]::[crossSection]::[WARNING] runinfo_handle is not valid. Ignore if running on data."<<endl;
-    if ( not runinfo_handle . isValid() ) return 0;
+    //if ( not runinfo_handle . isValid() ) cout<<"[NeroMonteCarlo]::[crossSection]::[WARNING] runinfo_handle is not valid. Ignore if running on data."<<endl;
+    //if ( not runinfo_handle . isValid() ) return 0;
 
-    cout<<"in begin Run  intXS/extXSLO/extXSNLO "<<runinfo_handle->internalXSec().value()<<"/"<<runinfo_handle->externalXSecLO().value()<<"/"<<runinfo_handle->externalXSecNLO().value()<<endl;	
+    //cout<<"in begin Run  intXS/extXSLO/extXSNLO "<<runinfo_handle->internalXSec().value()<<"/"<<runinfo_handle->externalXSecLO().value()<<"/"<<runinfo_handle->externalXSecNLO().value()<<endl;	
 
     // Internal xSec =  h(0) / h(1) 
-    if ( runinfo_handle->internalXSec().error() != 0 )
-    {
-        h->Fill(0. ,runinfo_handle->internalXSec().value()/pow(runinfo_handle->internalXSec().error(),2)    );
-        h->Fill(1 ,1./pow(runinfo_handle->internalXSec().error(),2) );
-    }
-    else 
-    {
-        cout <<" Warning: ERROR on xSec is 0. Setting it to 1"<<endl;
-        h->Fill(0. ,runinfo_handle->internalXSec().value()    );
-        h->Fill(1 ,1.);
-    }
+    #ifdef VERBOSE
+    if (VERBOSE>0)cout<<"[NeroMonteCarlo]::["<<__FUNCTION__<<"] genXSecAnalyzer:: xsec="<< gen_->final_xsec_value()<<endl;
+    #endif
+    double xs= gen_->final_xsec_value();
+    double err= gen_->final_xsec_error();
+    if (err ==0) err=1.;
 
-    // External xSec =  h(2) / h(3) 
-    h->Fill(2 ,runinfo_handle->externalXSecLO().value()/pow(runinfo_handle->externalXSecLO().error(),2)  );
-    h->Fill(3 ,1./pow(runinfo_handle->externalXSecLO().error(),2)  );
+    h->Fill(0.,xs/pow(err,2));
+    h->Fill(1.,1./pow(err,2));
 
-    h->Fill(4 ,runinfo_handle->externalXSecNLO().value()/pow(runinfo_handle->externalXSecNLO().error(),2) );
-    h->Fill(5 ,1./pow(runinfo_handle->externalXSecNLO().error(),2) );
+    //if ( runinfo_handle->internalXSec().error() != 0 )
+    //{
+    //    h->Fill(0. ,runinfo_handle->internalXSec().value()/pow(runinfo_handle->internalXSec().error(),2)    );
+    //    h->Fill(1 ,1./pow(runinfo_handle->internalXSec().error(),2) );
+    //}
+    //else 
+    //{
+    //    cout <<" Warning: ERROR on xSec is 0. Setting it to 1"<<endl;
+    //    h->Fill(0. ,runinfo_handle->internalXSec().value()    );
+    //    h->Fill(1 ,1.);
+    //}
+
+    //// External xSec =  h(2) / h(3) 
+    //h->Fill(2 ,runinfo_handle->externalXSecLO().value()/pow(runinfo_handle->externalXSecLO().error(),2)  );
+    //h->Fill(3 ,1./pow(runinfo_handle->externalXSecLO().error(),2)  );
+
+    //h->Fill(4 ,runinfo_handle->externalXSecNLO().value()/pow(runinfo_handle->externalXSecNLO().error(),2) );
+    //h->Fill(5 ,1./pow(runinfo_handle->externalXSecNLO().error(),2) );
 
     h->Fill(6 , 1 );
 
-    h->Fill(7 ,pow(runinfo_handle->internalXSec().value(),1) );
-    h->Fill(6 ,pow(runinfo_handle->externalXSecLO().value(),1)  );
-    h->Fill(9 ,pow(runinfo_handle->externalXSecNLO().value(),1) );
+    //h->Fill(7 ,pow(runinfo_handle->internalXSec().value(),1) );
+    //h->Fill(6 ,pow(runinfo_handle->externalXSecLO().value(),1)  );
+    //h->Fill(9 ,pow(runinfo_handle->externalXSecNLO().value(),1) );
 
-    h->Fill(10 ,pow(runinfo_handle->internalXSec().value(),2) );
-    h->Fill(11 ,pow(runinfo_handle->externalXSecLO().value(),2)  );
-    h->Fill(12 ,pow(runinfo_handle->externalXSecNLO().value(),2) );
+    //h->Fill(10 ,pow(runinfo_handle->internalXSec().value(),2) );
+    //h->Fill(11 ,pow(runinfo_handle->externalXSecLO().value(),2)  );
+    //h->Fill(12 ,pow(runinfo_handle->externalXSecNLO().value(),2) );
 
     return 0;
 }

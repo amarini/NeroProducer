@@ -9,8 +9,9 @@ class NeroLumi: virtual public BareCollection{
         NeroLumi() : BareCollection(){}
         virtual ~NeroLumi(){}
         // --- Just virtual
-        virtual int  analyzeLumi(const edm::LuminosityBlock &,TTree*) {return 0;}
-        virtual int  analyzeLumi(const edm::LuminosityBlock &,TH1F*) {return 0;}
+        virtual int  beginLumi(const edm::LuminosityBlock &,edm::EventSetup const&iSetup) {return 0;}
+        virtual int  analyzeLumi(const edm::LuminosityBlock &,edm::EventSetup const&iSetup,TTree*) {return 0;}
+        //virtual int  analyzeLumi(const edm::LuminosityBlock &,TH1F*) {return 0;}
         virtual inline string name(){return "NeroLumi";}
 };
 
@@ -19,8 +20,9 @@ class NeroRun: virtual public BareCollection{
         NeroRun() : BareCollection(){}
         virtual ~NeroRun(){}
         // --- Just virtual
-        virtual inline int  analyzeRun(const edm::Run &,TTree*) {return 0;}
-        virtual inline int  analyzeRun(const edm::Run &,TH1F*) {return 0;} 
+        //virtual inline int  analyzeRun(const edm::Run &,TTree*) {return 0;}
+        virtual inline int  beginRun(const edm::Run &,edm::EventSetup const&iSetup) {return 0;} 
+        virtual inline int  analyzeRun(const edm::Run &,edm::EventSetup const&iSetup,TH1F*) {return 0;} 
         virtual inline string name(){return "NeroRun";}
 };
 

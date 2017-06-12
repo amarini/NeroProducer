@@ -34,7 +34,7 @@ nero = cms.EDAnalyzer("Nero",
     # gen
     pileup = cms.InputTag("slimmedAddPileupInfo"),
     generator = cms.InputTag("generator"),
-    genruninfo = cms.InputTag("generator"),
+    #genruninfo = cms.InputTag("generator"),
     lhe = cms.InputTag("externalLHEProducer"),
     genjets = cms.InputTag("slimmedGenJets"),
     prunedgen = cms.InputTag("prunedGenParticles"),
